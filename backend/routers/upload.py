@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session
 
 sys.path.append(str(Path(__file__).resolve().parents[2] / "ml"))
 
+from auth import require_role
 from database import get_db_session
+from models import User
 from routers.predict import score_and_store
 from schemas import ElectionRecordIn
 
@@ -22,7 +24,11 @@ REQUIRED_COLUMNS = {
 
 
 @router.post("/csv")
-def upload_csv(file: UploadFile = File(...), db: Session = Depends(get_db_session)):
+def upload_csv(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db_session),
+    _: User = Depends(require_role("Administrator", "Analyst")),
+):
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Please upload a .csv file")
 

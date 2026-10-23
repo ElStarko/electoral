@@ -1,4 +1,6 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { getAlertCount } from "../api";
 import { useAuth } from "../AuthContext";
 
 const linkStyle = ({ isActive }) => ({
@@ -9,11 +11,28 @@ const linkStyle = ({ isActive }) => ({
   textDecoration: "none",
   fontSize: "0.95rem",
   letterSpacing: "0.01em",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
 });
 
 export default function Header() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [openAlerts, setOpenAlerts] = useState(0);
+
+  const isSecurityOrAdmin = user && ["Security Officer", "Administrator"].includes(user.role);
+
+  useEffect(() => {
+    if (isSecurityOrAdmin) {
+      getAlertCount()
+        .then((c) => {
+          if (c && typeof c.open === "number") setOpenAlerts(c.open);
+        })
+        .catch(() => {});
+    }
+  }, [isSecurityOrAdmin, location.pathname]);
 
   const handleLogout = () => {
     logout();
@@ -66,16 +85,42 @@ export default function Header() {
             Electoral Malpractice Watch
           </h1>
         </div>
-        <nav style={{ display: "flex", gap: 22, alignItems: "center", paddingBottom: 6 }}>
+        <nav style={{ display: "flex", gap: 20, alignItems: "center", paddingBottom: 6, flexWrap: "wrap" }}>
           <NavLink to="/" end style={linkStyle}>
             Dashboard
           </NavLink>
-          <NavLink to="/predict" style={linkStyle}>
-            Score a Record
-          </NavLink>
+          {user && ["Administrator", "Analyst"].includes(user.role) && (
+            <NavLink to="/predict" style={linkStyle}>
+              Score a Record
+            </NavLink>
+          )}
           <NavLink to="/records" style={linkStyle}>
             Records
           </NavLink>
+          <NavLink to="/incidents" style={linkStyle}>
+            Incidents
+          </NavLink>
+          {isSecurityOrAdmin && (
+            <NavLink to="/alerts" style={linkStyle}>
+              Alerts
+              {openAlerts > 0 && (
+                <span
+                  className="mono"
+                  style={{
+                    background: "var(--red)",
+                    color: "#fff",
+                    fontSize: "0.68rem",
+                    fontWeight: 700,
+                    padding: "1px 6px",
+                    borderRadius: 10,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {openAlerts}
+                </span>
+              )}
+            </NavLink>
+          )}
           {user && (
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 8 }}>
               <div style={{ fontSize: "0.8rem", textAlign: "right", lineHeight: 1.2 }}>

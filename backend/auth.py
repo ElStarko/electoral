@@ -54,3 +54,34 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
     return user
+
+
+def require_role(*roles: str):
+    """
+    FastAPI dependency factory.  Returns a dependency that checks the current
+    user's role against the provided allowed roles, raising HTTP 403 if the
+    check fails.
+
+    Usage:
+        @router.post("/csv")
+        def upload_csv(
+            file: UploadFile = File(...),
+            db: Session = Depends(get_db_session),
+            _: User = Depends(require_role("Administrator", "Analyst")),
+        ):
+            ...
+    """
+    allowed = set(roles)
+
+    def _check(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    f"Access denied. Required role(s): {sorted(allowed)}. "
+                    f"Your role: {current_user.role}."
+                ),
+            )
+        return current_user
+
+    return _check

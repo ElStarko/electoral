@@ -1,7 +1,9 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./AuthContext";
 import Header from "./components/Header";
+import Alerts from "./pages/Alerts";
 import Dashboard from "./pages/Dashboard";
+import Incidents from "./pages/Incidents";
 import Login from "./pages/Login";
 import Predict from "./pages/Predict";
 import Records from "./pages/Records";
@@ -43,6 +45,22 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <Records />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/incidents"
+          element={
+            <ProtectedRoute>
+              <Incidents />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/alerts"
+          element={
+            <ProtectedRoute>
+              <Alerts />
             </ProtectedRoute>
           }
         />

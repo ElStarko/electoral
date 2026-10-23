@@ -8,10 +8,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 sys.path.append(str(Path(__file__).resolve().parents[2] / "ml"))
-from predict import get_predictor  # noqa: E402
+from predict import MalpracticePredictor, get_predictor  # noqa: E402
 
+from auth import require_role
 from database import get_db_session
-from models import Election, ElectionResult, PollingUnit, PredictionModel, RiskPrediction, State
+from models import Alert, Election, ElectionResult, PollingUnit, PredictionModel, RiskPrediction, State, User
 from schemas import ElectionRecordIn, RecordWithPrediction
 
 router = APIRouter(prefix="/api/predict", tags=["prediction"])
@@ -130,19 +131,39 @@ def score_and_store(db: Session, record: ElectionRecordIn) -> dict:
         createdAt=datetime.now(timezone.utc),
     )
     db.add(rp)
+    db.flush()  # get predictionID before alert insert
+
+    # Ch.3 Activity Diagram (3.2.5): auto-create alert for High risk
+    if result["risk_level"] == "High":
+        alert = Alert(
+            predictionID=rp.predictionID,
+            puID=pu.puID,
+            status="Open",
+            createdAt=datetime.now(timezone.utc),
+        )
+        db.add(alert)
+
     db.commit()
 
     return result
 
 
 @router.post("", response_model=RecordWithPrediction)
-def predict_single(record: ElectionRecordIn, db: Session = Depends(get_db_session)):
+def predict_single(
+    record: ElectionRecordIn,
+    db: Session = Depends(get_db_session),
+    _: User = Depends(require_role("Administrator", "Analyst")),
+):
     result = score_and_store(db, record)
     return {**record.model_dump(), "prediction": result}
 
 
 @router.post("/batch")
-def predict_batch(records: list[ElectionRecordIn], db: Session = Depends(get_db_session)):
+def predict_batch(
+    records: list[ElectionRecordIn],
+    db: Session = Depends(get_db_session),
+    _: User = Depends(require_role("Administrator", "Analyst")),
+):
     if len(records) > 5000:
         raise HTTPException(status_code=400, detail="Max 5000 records per batch request")
 
@@ -152,3 +173,81 @@ def predict_batch(records: list[ElectionRecordIn], db: Session = Depends(get_db_
         results.append({**record.model_dump(), "prediction": result})
 
     return {"count": len(results), "results": results}
+
+
+@router.get("/metrics")
+def model_metrics():
+    """Return the stored metrics.json (algorithm comparison + accuracy for all roles)."""
+    if not _METRICS_PATH.exists():
+        raise HTTPException(status_code=404, detail="metrics.json not found — run train_models.py first.")
+    with open(_METRICS_PATH) as f:
+        return json.load(f)
+
+
+@router.post("/retrain")
+def retrain_model(
+    data_path: str = "../data/nigeria_election_data.csv",
+    db: Session = Depends(get_db_session),
+    _: User = Depends(require_role("Analyst")),
+):
+    """
+    Analyst-only endpoint. Checks whether the latest model's stored ROC-AUC
+    is below the acceptable threshold (0.90); if so, re-runs training against
+    the data file at data_path and registers a new tbl_predictionmodel row.
+    Returns the comparison table and whether retraining was triggered.
+    """
+    THRESHOLD = 0.90
+    out_dir = str(_METRICS_PATH.parent)
+
+    # Read current accuracy
+    current_auc = 0.0
+    if _METRICS_PATH.exists():
+        with open(_METRICS_PATH) as f:
+            current_auc = json.load(f).get("classification", {}).get("roc_auc", 0.0)
+
+    if current_auc >= THRESHOLD:
+        return {
+            "retrained": False,
+            "reason": f"Current ROC-AUC ({current_auc}) meets the threshold ({THRESHOLD}). No retraining needed.",
+            "current_roc_auc": current_auc,
+        }
+
+    # Trigger retraining via importlib so static analysers don't flag
+    # train_models as unresolved (it lives in ml/, added to sys.path above).
+    import importlib
+    import sys as _sys
+    from pathlib import Path as _Path
+    _ml_path = str(_Path(__file__).resolve().parents[2] / "ml")
+    if _ml_path not in _sys.path:
+        _sys.path.insert(0, _ml_path)
+    _tm = importlib.import_module("train_models")
+    try:
+        _tm.main(data_path, out_dir)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Training failed: {e}")
+
+    # Reload metrics and register new model row
+    with open(_METRICS_PATH) as f:
+        new_metrics = json.load(f)
+    new_auc = new_metrics.get("classification", {}).get("roc_auc", 0.0)
+    new_algo = new_metrics.get("classification", {}).get("algorithm", "Unknown")
+
+    new_model = PredictionModel(
+        algorithm=new_algo,
+        accuracy=new_auc,
+        trainedDate=date.today(),
+    )
+    db.add(new_model)
+    db.commit()
+
+    # Invalidate the in-memory predictor singleton so the next call reloads
+    _predict_mod = importlib.import_module("predict")
+    _predict_mod._predictor_singleton = None
+
+    return {
+        "retrained": True,
+        "previous_roc_auc": current_auc,
+        "new_roc_auc": new_auc,
+        "selected_algorithm": new_algo,
+        "algorithm_comparison": new_metrics.get("algorithm_comparison", {}),
+    }

@@ -7,10 +7,20 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+// Always attach token synchronously from localStorage on every outgoing request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("emp_token");
+  if (token && !config.headers.Authorization) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const isAuthCall = error.config?.url?.includes("/api/auth/login");
+    const url = error.config?.url || "";
+    const isAuthCall = url.includes("/api/auth/login") || url.includes("/api/auth/register");
     if (error.response?.status === 401 && !isAuthCall) {
       localStorage.removeItem("emp_token");
       localStorage.removeItem("emp_user");
@@ -34,6 +44,9 @@ export const getRecords = (params) =>
 export const predictRecord = (payload) =>
   api.post("/api/predict", payload).then((r) => r.data);
 
+export const getModelMetrics = () =>
+  api.get("/api/predict/metrics").then((r) => r.data);
+
 export const uploadCsv = (file) => {
   const form = new FormData();
   form.append("file", file);
@@ -51,6 +64,22 @@ export const registerRequest = (fullName, email, password, role) =>
   api
     .post("/api/auth/register", { full_name: fullName, email, password, role })
     .then((r) => r.data);
+
+// Incidents
+export const getIncidentsMeta = () =>
+  api.get("/api/incidents/meta").then((r) => r.data);
+export const getIncidents = (params) =>
+  api.get("/api/incidents", { params }).then((r) => r.data);
+export const reportIncident = (payload) =>
+  api.post("/api/incidents", payload).then((r) => r.data);
+
+// Alerts
+export const getAlerts = (params) =>
+  api.get("/api/alerts", { params }).then((r) => r.data);
+export const getAlertCount = () =>
+  api.get("/api/alerts/count").then((r) => r.data);
+export const patchAlert = (alertId, payload) =>
+  api.patch(`/api/alerts/${alertId}`, payload).then((r) => r.data);
 
 // Export routes now require auth, so a plain <a href> won't carry the
 // token — fetch as a blob with axios (which attaches the Authorization

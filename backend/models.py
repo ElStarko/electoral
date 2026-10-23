@@ -185,3 +185,28 @@ class RiskPrediction(Base):
     polling_unit = relationship("PollingUnit", back_populates="predictions")
     model = relationship("PredictionModel", back_populates="predictions")
     election_result = relationship("ElectionResult", back_populates="predictions")
+    alert = relationship("Alert", back_populates="prediction", uselist=False)
+
+
+class Alert(Base):
+    """
+    Ch.3 Activity Diagram (3.2.5): when risk level is High the system
+    sends an alert to the Security Agency Officer who then deploys
+    resources and submits field response feedback.
+
+    Status lifecycle: Open → Responding → Resolved
+    """
+
+    __tablename__ = "tbl_alert"
+
+    alertID = Column(Integer, primary_key=True, autoincrement=True)
+    predictionID = Column(
+        Integer, ForeignKey("tbl_riskprediction.predictionID"), nullable=False, unique=True
+    )
+    puID = Column(Integer, ForeignKey("tbl_pollingunit.puID"), nullable=False)
+    status = Column(String(20), nullable=False, default="Open")  # Open, Responding, Resolved
+    fieldResponseFeedback = Column(String(1000), nullable=True)
+    createdAt = Column(DateTime, nullable=False)
+
+    prediction = relationship("RiskPrediction", back_populates="alert")
+    polling_unit = relationship("PollingUnit")

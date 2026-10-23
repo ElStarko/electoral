@@ -188,7 +188,14 @@ Metrics from the last training run are saved to `ml/models/metrics.json`.
 - `GET /api/records/export/csv` / `/pdf` — download a filtered CSV or a formatted risk report PDF (requires auth)
 - `GET /api/stats/overview` — headline totals (requires auth)
 - `GET /api/stats/by-state` / `/api/stats/by-zone` — aggregated risk (requires auth)
-- `GET /api/stats/risk-distribution` — counts per risk level (requires auth)
+- `POST /api/incidents` — submit an incident report (Voter / Observer use case, stored in `tbl_incidentrecord`)
+- `GET /api/incidents` — list and filter field incident reports
+- `GET /api/incidents/meta` — retrieve valid incident types and severities
+- `GET /api/alerts` — queue of high-risk prediction alerts (Security Officer & Administrator)
+- `PATCH /api/alerts/{id}` — log security field response feedback and update status (Ch.3 Activity Diagram)
+- `GET /api/alerts/count` — badge count of open/responding/resolved alerts
+- `GET /api/predict/metrics` — candidate algorithm comparison metrics (Random Forest, Decision Tree, Logistic Regression, SVM)
+- `POST /api/predict/retrain` — automated model retraining loop with threshold evaluation (Analyst & Administrator)
 
 Every endpoint except `/api/auth/*`, `/`, and `/health` requires an
 `Authorization: Bearer <token>` header from a logged-in user.
