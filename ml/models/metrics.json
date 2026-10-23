@@ -1,0 +1,60 @@
+{
+  "classification": {
+    "roc_auc": 0.9729,
+    "report": {
+      "0": {
+        "precision": 0.9749276759884281,
+        "recall": 0.9970414201183432,
+        "f1-score": 0.9858605558264262,
+        "support": 1014.0
+      },
+      "1": {
+        "precision": 0.9815950920245399,
+        "recall": 0.8602150537634409,
+        "f1-score": 0.9169054441260746,
+        "support": 186.0
+      },
+      "accuracy": 0.9758333333333333,
+      "macro avg": {
+        "precision": 0.978261384006484,
+        "recall": 0.928628236940892,
+        "f1-score": 0.9513829999762504,
+        "support": 1200.0
+      },
+      "weighted avg": {
+        "precision": 0.9759611254740255,
+        "recall": 0.9758333333333333,
+        "f1-score": 0.9751725135128716,
+        "support": 1200.0
+      }
+    },
+    "feature_importances": {
+      "registered_voters": 0.0155,
+      "accredited_voters": 0.0382,
+      "total_votes_cast": 0.0439,
+      "valid_votes": 0.0416,
+      "rejected_votes": 0.0068,
+      "turnout_pct": 0.0958,
+      "leading_party_vote_share": 0.2713,
+      "benford_deviation_score": 0.0126,
+      "over_voting_flag": 0.0124,
+      "incident_reported": 0.2909,
+      "literacy_rate": 0.0133,
+      "unemployment_rate": 0.0129,
+      "zone_encoded": 0.0036,
+      "state_encoded": 0.0088,
+      "accreditation_vs_registered": 0.1102,
+      "votes_vs_accredited": 0.013,
+      "rejected_rate": 0.0092
+    }
+  },
+  "risk_scoring": {
+    "roc_auc": 0.979,
+    "mean_risk_score_malpractice": 17.09,
+    "mean_risk_score_clean": 0.42
+  },
+  "anomaly_detection": {
+    "flagged_rate": 0.1433,
+    "agreement_with_labels": 0.91
+  }
+}

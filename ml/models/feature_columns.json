@@ -1,0 +1,19 @@
+[
+  "registered_voters",
+  "accredited_voters",
+  "total_votes_cast",
+  "valid_votes",
+  "rejected_votes",
+  "turnout_pct",
+  "leading_party_vote_share",
+  "benford_deviation_score",
+  "over_voting_flag",
+  "incident_reported",
+  "literacy_rate",
+  "unemployment_rate",
+  "zone_encoded",
+  "state_encoded",
+  "accreditation_vs_registered",
+  "votes_vs_accredited",
+  "rejected_rate"
+]
