@@ -19,11 +19,11 @@ So `data/generate_dataset.py` builds a **polling-unit-level dataset that
 mirrors the real structure and statistical patterns** of Nigerian
 election data:
 
-- Real 36 states + FCT, grouped into the real 6 geopolitical zones
+- A subset of 14 real states plus the FCT (a subset due to time constraints), covering all 6 real geopolitical zones
 - Registered-voter counts and turnout drawn from ranges consistent with
   the 2023 general election (INEC: ~93.4M registered, ~26.7% national
   turnout, with real regional variance)
-- Malpractice patterns injected at a realistic ~17% base rate, matching
+- Malpractice patterns injected at a base rate of about 15.5% of records, matching
   documented red flags used in election forensics: over-voting (votes >
   registered voters), abnormal turnout spikes or suppression, landslide
   vote concentration (>85% for one party), and Benford's Law digit
@@ -131,7 +131,7 @@ npm run dev
 ```
 Dashboard: http://localhost:5173
 
-## 3. Database schema (matches thesis Ch.3 ERD, with two additions)
+## 3. Database schema
 
 The MySQL schema implements the six entities from Chapter 3's ERD
 (Figure 3.5) and Tables 3.1-3.6 exactly: `tbl_users`, `tbl_election`,
@@ -171,7 +171,7 @@ function, not arbitrary changes.
 | Component | Model | Question it answers |
 |---|---|---|
 | Classification | `RandomForestClassifier` | Is this record malpractice or clean (yes/no)? |
-| Risk scoring | `GradientBoostingClassifier` probability, rescaled | What's the 0–100 risk score / risk level (Low/Moderate/High/Critical) for this record or region? |
+| Risk scoring | `GradientBoostingClassifier` probability, rescaled | What's the 0–20 risk score / risk level (Low: below 7, Medium: 7 to below 13, High: 13 and above) for this record or region? |
 | Anomaly detection | `IsolationForest` (unsupervised) | Does this record look statistically unusual, independent of the labels the classifier was trained on? |
 
 Metrics from the last training run are saved to `ml/models/metrics.json`.
@@ -199,21 +199,3 @@ Metrics from the last training run are saved to `ml/models/metrics.json`.
 
 Every endpoint except `/api/auth/*`, `/`, and `/health` requires an
 `Authorization: Bearer <token>` header from a logged-in user.
-
-## 6. Suggested thesis write-up structure
-
-1. Problem statement & literature review (electoral fraud detection,
-   Benford's Law in vote-count forensics, prior ML approaches to
-   election integrity)
-2. Data — describe the schema, the real sources listed above, and (if
-   using the generated data as a placeholder/pilot) be explicit that
-   it's a synthetic stand-in built to match real statistical patterns
-   while real data collection was pending
-3. Methodology — the three-model design (classification / risk scoring
-   / anomaly detection) and why each is included
-4. System architecture — Python ML layer, FastAPI service layer,
-   MySQL persistence (per Ch.3 ERD), React presentation layer (this repo)
-5. Results — pull metrics from `ml/models/metrics.json`, screenshots
-   from the dashboard
-6. Limitations & future work — dataset provenance, class imbalance,
-   generalization to future elections, real-time IReV ingestion

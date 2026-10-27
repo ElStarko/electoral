@@ -14,7 +14,7 @@ Prediction System:
                         can reference actual numbers for all four algorithms.
 
   2. RISK SCORING     - GradientBoostingClassifier probability output,
-                         rescaled to a 0-100 risk score per record/region.
+                         rescaled to a 0-20 risk score per record/region.
 
   3. ANOMALY DETECTION - IsolationForest, unsupervised, flags statistical
                          outliers independent of the labelled malpractice
@@ -66,7 +66,6 @@ FEATURE_COLUMNS = [
     "leading_party_vote_share",
     "benford_deviation_score",
     "over_voting_flag",
-    "incident_reported",
     "literacy_rate",
     "unemployment_rate",
     "zone_encoded",
@@ -148,7 +147,7 @@ def main(data_path: str, out_dir: str):
             class_weight="balanced", random_state=42,
         ),
         "Logistic Regression": LogisticRegression(
-            max_iter=1000, class_weight="balanced", random_state=42, n_jobs=-1,
+            max_iter=1000, class_weight="balanced", random_state=42,
         ),
         "SVM": SVC(
             kernel="rbf", probability=True,
@@ -184,7 +183,7 @@ def main(data_path: str, out_dir: str):
             best_name = name
             best_model = model
 
-    print(f"\n  \u2713 Best classifier: {best_name} (ROC-AUC = {best_auc})")
+    print(f"\n  [+] Best classifier: {best_name} (ROC-AUC = {best_auc})")
     comparison["selected"] = best_name
 
     # Full report + feature importances for the winner
@@ -202,7 +201,7 @@ def main(data_path: str, out_dir: str):
         "feature_importances": feature_importances,
     }
 
-    # ---- 2. Risk scoring (probability-based, 0-100 scale) ----
+    # ---- 2. Risk scoring (probability-based, 0-20 scale) ----
     risk_model = GradientBoostingClassifier(
         n_estimators=250, max_depth=4, learning_rate=0.05, random_state=42,
     )

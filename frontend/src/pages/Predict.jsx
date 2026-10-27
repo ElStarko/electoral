@@ -35,7 +35,6 @@ const initialForm = {
   leading_party_vote_share: 0.55,
   benford_deviation_score: 0.2,
   over_voting_flag: 0,
-  incident_reported: 0,
   literacy_rate: 60,
   unemployment_rate: 25,
 };
@@ -72,7 +71,6 @@ export default function Predict() {
         leading_party_vote_share: Number(form.leading_party_vote_share),
         benford_deviation_score: Number(form.benford_deviation_score),
         over_voting_flag: Number(form.over_voting_flag),
-        incident_reported: Number(form.incident_reported),
         literacy_rate: Number(form.literacy_rate),
         unemployment_rate: Number(form.unemployment_rate),
       };
@@ -188,12 +186,6 @@ export default function Predict() {
           </Field>
           <Field label="Over-voting observed?">
             <select value={form.over_voting_flag} onChange={(e) => update("over_voting_flag", e.target.value)}>
-              <option value={0}>No</option>
-              <option value={1}>Yes</option>
-            </select>
-          </Field>
-          <Field label="Incident reported?">
-            <select value={form.incident_reported} onChange={(e) => update("incident_reported", e.target.value)}>
               <option value={0}>No</option>
               <option value={1}>Yes</option>
             </select>

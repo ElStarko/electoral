@@ -14,7 +14,7 @@ ACLED's case, a free API key/registration.
 
 To let the whole pipeline (ML + backend + frontend) be built and tested
 end-to-end right now, this script generates a dataset that:
-  - Uses the REAL 36 states + FCT and real senatorial/geo-political zones
+  - Uses a subset of real states (14 states + FCT, due to time constraints) spanning all 6 real geo-political zones
   - Uses realistic registered-voter and turnout ranges drawn from the
     actual 2023 general election (INEC figures: ~93.4M registered,
     ~26.7% national turnout, with known regional variance)

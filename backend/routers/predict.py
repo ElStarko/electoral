@@ -71,16 +71,18 @@ def get_or_create_polling_unit(
 
 
 def get_or_create_prediction_model(db: Session) -> PredictionModel:
-    algorithm_name = "RandomForest+GradientBoosting+IsolationForest"
+    # Record the winning classifier's name and its accuracy on the test set
+    algorithm_name = "Random Forest"
+    accuracy = 0.0
+    try:
+        with open(_METRICS_PATH) as f:
+            metrics = json.load(f)
+            algorithm_name = metrics.get("classification", {}).get("algorithm", algorithm_name)
+            accuracy = metrics.get("classification", {}).get("report", {}).get("accuracy", 0.0)
+    except Exception:
+        pass
     model = db.query(PredictionModel).filter(PredictionModel.algorithm == algorithm_name).first()
     if not model:
-        accuracy = 0.0
-        try:
-            with open(_METRICS_PATH) as f:
-                metrics = json.load(f)
-                accuracy = metrics.get("classification", {}).get("roc_auc", 0.0)
-        except Exception:
-            pass
         model = PredictionModel(algorithm=algorithm_name, accuracy=accuracy, trainedDate=date.today())
         db.add(model)
         db.flush()
@@ -231,10 +233,11 @@ def retrain_model(
         new_metrics = json.load(f)
     new_auc = new_metrics.get("classification", {}).get("roc_auc", 0.0)
     new_algo = new_metrics.get("classification", {}).get("algorithm", "Unknown")
+    new_accuracy = new_metrics.get("classification", {}).get("report", {}).get("accuracy", 0.0)
 
     new_model = PredictionModel(
         algorithm=new_algo,
-        accuracy=new_auc,
+        accuracy=new_accuracy,
         trainedDate=date.today(),
     )
     db.add(new_model)
